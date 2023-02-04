@@ -287,3 +287,9 @@ div::-webkit-scrollbar-thumb {
 .error {
   color: red;
 }
+.loader__container {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+}

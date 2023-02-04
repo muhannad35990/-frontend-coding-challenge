@@ -1,13 +1,13 @@
 import react, { useRef, useState } from "react";
-import { Button, Input, Space } from "antd";
+import { Button, Input, Space, DatePicker } from "antd";
 import { SearchOutlined } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import { Tag } from "antd";
 import moment from "moment";
 
 function GetColumns() {
-  const [searchText, setSearchText] = useState<any>("");
-  const [searchedColumn, setSearchedColumn] = useState<any>("");
+  const [searchText, setSearchText] = useState<string>("");
+  const [searchedColumn, setSearchedColumn] = useState<string>("");
   const searchInput = useRef<any>(null);
 
   const handleSearch = (
@@ -20,10 +20,9 @@ function GetColumns() {
     setSearchedColumn(dataIndex);
   };
 
-  const handleReset = (clearFilters: () => void) => {
-    clearFilters();
+  const handleReset = (clearFilters: any, setSelectedKeys: any) => {
+    clearFilters({ confirm: false });
     setSearchText("");
-    setSearchedColumn("");
   };
 
   const getColumnSearchProps = (dataIndex: any): any => ({
@@ -48,7 +47,7 @@ function GetColumns() {
             Search
           </Button>
           <Button
-            onClick={() => clearFilters && handleReset(clearFilters)}
+            onClick={() => clearFilters && handleReset(clearFilters, setSelectedKeys)}
             size="small"
             style={{ width: 90 }}
           >
@@ -82,6 +81,38 @@ function GetColumns() {
         text
       ),
   });
+
+  const getDateFilter = (dataIndex: any): any => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }: any) => (
+      <div style={{ padding: 8, display: "flex", flexDirection: "column" }}>
+        <DatePicker
+          // format={"DD-MM-YY"}
+          onChange={(e: any) => {
+            setSelectedKeys([e]);
+          }}
+          allowClear={true}
+        />
+
+        <div style={{ padding: 8 }}>
+          <Button
+            type="primary"
+            onClick={() => handleSearch(selectedKeys as string[], confirm, dataIndex)}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90, margin: 2 }}
+          >
+            Filter
+          </Button>
+        </div>
+      </div>
+    ),
+    onFilter: (value: any, record: any) => {
+      return value
+        ? moment(record[dataIndex]).format("DD-MM-YYYY") === value.format("DD-MM-YYYY")
+        : record;
+    },
+  });
+
   return [
     {
       title: "Member name",
@@ -95,9 +126,19 @@ function GetColumns() {
       title: "Type of absence",
       dataIndex: "type",
       key: "type",
+      filters: [
+        {
+          text: "Vacation",
+          value: "vacation",
+        },
+        {
+          text: "Sickness",
+          value: "sickness",
+        },
+      ],
+      onFilter: (value: string, record: any) => record.type === value,
       sorter: (a: any, b: any) => a.type.localeCompare(b.type),
       sortDirections: ["descend", "ascend"],
-      ...getColumnSearchProps("type"),
     },
     {
       title: "Period",
@@ -126,7 +167,26 @@ function GetColumns() {
       title: "Status",
       dataIndex: "status",
       key: "status",
-
+      filters: [
+        {
+          text: "Rejected",
+          value: "Rejected",
+        },
+        {
+          text: "Confirmed",
+          value: "Confirmed",
+        },
+        {
+          text: "Requested",
+          value: "Requested",
+        },
+      ],
+      onFilter: (value: string, record: any) =>
+        value === "Rejected"
+          ? record.rejectedAt
+          : value === "Confirmed"
+          ? record.confirmedAt
+          : !record.confirmedAt && !record.rejectedAt,
       render: (text: string, record: any, index: number) => {
         const currentText = record.rejectedAt
           ? "Rejected"
@@ -160,18 +220,16 @@ function GetColumns() {
       title: "Start Date",
       dataIndex: "startDate",
       key: "startDate",
-      sorter: (a: any, b: any) => a.startDate.localeCompare(b.startDate),
       sortDirections: ["descend", "ascend"],
-
+      ...getDateFilter("startDate"),
       render: (text: string) => moment.utc(text).format("MM/DD/YYYY"),
     },
     {
       title: "End Date",
       dataIndex: "endDate",
       key: "endDate",
-      sorter: (a: any, b: any) => a.endDate.localeCompare(b.endDate),
       sortDirections: ["descend", "ascend"],
-
+      ...getDateFilter("endDate"),
       render: (text: string) => moment.utc(text).format("MM/DD/YYYY"),
     },
   ];
